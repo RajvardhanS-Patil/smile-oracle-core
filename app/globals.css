@@ -1,120 +1,79 @@
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-.tlui-help-menu {
-	display: none !important;
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 20 14.3% 4.1%;
+    --card: 0 0% 100%;
+    --card-foreground: 20 14.3% 4.1%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 14.3% 4.1%;
+    --primary: 24 9.8% 10%;
+    --primary-foreground: 60 9.1% 97.8%;
+    --secondary: 60 4.8% 95.9%;
+    --secondary-foreground: 24 9.8% 10%;
+    --muted: 60 4.8% 95.9%;
+    --muted-foreground: 25 5.3% 44.7%;
+    --accent: 60 4.8% 95.9%;
+    --accent-foreground: 24 9.8% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 60 9.1% 97.8%;
+    --border: 20 5.9% 90%;
+    --input: 20 5.9% 90%;
+    --ring: 20 14.3% 4.1%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+  }
+  .dark {
+    --background: 20 14.3% 4.1%;
+    --foreground: 60 9.1% 97.8%;
+    --card: 20 14.3% 4.1%;
+    --card-foreground: 60 9.1% 97.8%;
+    --popover: 20 14.3% 4.1%;
+    --popover-foreground: 60 9.1% 97.8%;
+    --primary: 60 9.1% 97.8%;
+    --primary-foreground: 24 9.8% 10%;
+    --secondary: 12 6.5% 15.1%;
+    --secondary-foreground: 60 9.1% 97.8%;
+    --muted: 12 6.5% 15.1%;
+    --muted-foreground: 24 5.4% 63.9%;
+    --accent: 12 6.5% 15.1%;
+    --accent-foreground: 60 9.1% 97.8%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 60 9.1% 97.8%;
+    --border: 12 6.5% 15.1%;
+    --input: 12 6.5% 15.1%;
+    --ring: 24 5.7% 82.9%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
 }
 
-.tlui-debug-panel {
-	display: none !important;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
-.tldraw__editor {
-	position: fixed;
-	inset: 0px;
-	overflow: hidden;
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
 }
 
-.your-own-api-key {
-	position: absolute;
-	bottom: 72px;
-	right: 0px;
-	width: 100%;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	z-index: var(--layer-panels);
-	color: var(--color-text-0);
-	pointer-events: none;
-}
-
-.your-own-api-key__inner {
-	display: flex;
-	font-size: 12px;
-	font-family: Inter, sans-serif;
-	flex-direction: row;
-	max-width: 300px;
-	width: 100%;
-	gap: 4px;
-	background-color: var(--color-low);
-	border-radius: 8px;
-	padding: 6px;
-	pointer-events: all;
-}
-
-.your-own-api-key__mobile {
-	bottom: 108px;
-}
-.your-own-api-key__mobile input {
-	bottom: 108px;
-	font-size: 16px !important;
-	pointer-events: all;
-}
-
-.your-own-api-key input {
-	padding: 6px 12px;
-	border-radius: 4px;
-	color: transparent;
-	background: var(--color-panel);
-	width: 100%;
-	height: 32px;
-}
-
-.input__wrapper {
-	position: relative;
-	flex-grow: 2;
-}
-
-.input__wrapper:not(:focus-within)::after {
-	content: 'Your OpenAI API Key (risky but cool)';
-	display: block;
-	position: absolute;
-	inset: 0px;
-	display: flex;
-	align-items: center;
-	padding: 0px 12px;
-	z-index: 999999999;
-	background-color: none;
-	font-size: 12px;
-	font-family: Inter, sans-serif;
-	opacity: 1;
-}
-
-.input__wrapper::after {
-	pointer-events: none;
-}
-
-.your-own-api-key input:focus {
-	color: var(--color-text-0);
-}
-
-.lockup__link {
-	position: absolute;
-	z-index: var(--layer-panels);
-	bottom: 0px;
-	right: 0px;
-}
-
-.lockup__link__mobile {
-	bottom: 60px;
-}
-
-.question__button {
-	all: unset;
-	flex-shrink: 0;
-	width: 32px;
-	height: 32px;
-	background-color: none;
-	border-radius: 4px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	cursor: pointer;
-}
-
-.lockup__link img {
-	height: 60px;
-	padding: 8px;
+.bg-loading-overlay {
+  background-color: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
 }

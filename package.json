@@ -1,6 +1,6 @@
 {
-  "name": "draw-a-ui",
-  "version": "0.1.0",
+  "name": "smile-oracle-core",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -87,12 +87,14 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^7.0.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.4.20",
     "eslint": "^8",
     "eslint-config-next": "14.0.1",
+    "hardhat": "^3.21.2",
     "postcss": "^8.4.44",
     "tailwindcss": "^3.4.10",
     "typescript": "^5"

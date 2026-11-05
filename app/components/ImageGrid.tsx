@@ -14,6 +14,7 @@ interface Image {
   smileScore?: number;
   hasWon?: boolean;
   isNounish: boolean;
+  userId?: string;
 }
 
 interface ImageGridProps {
@@ -25,6 +26,7 @@ interface ImageGridProps {
     smileScore?: number;
     hasWon?: boolean;
     isNounish: boolean;
+    userId?: string;
   }>;
   authenticated: boolean;
   userId?: string;
@@ -136,7 +138,7 @@ export const ImageGrid = ({
                 >
                   <Share className="h-4 w-4" />
                 </Button>
-                {authenticated && userId && image.url.includes(`${userId}/`) && (
+                {authenticated && userId && (image.url.includes(`${userId}/`) || image.userId === userId) && (
                   <Button 
                     variant="outline" 
                     size="icon" 

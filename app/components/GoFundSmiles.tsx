@@ -1,9 +1,11 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ethers } from 'ethers';
 import { Heart, Sparkles, PartyPopper } from 'lucide-react';
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy, useAuthDetails } from '@/lib/auth';
 import { Modal } from "./ui/modal";
 
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
@@ -21,63 +23,91 @@ interface GoFundSmilesProps {
 }
 
 const GoFundSmiles = ({ wallet }: GoFundSmilesProps) => {
-  const { login, authenticated } = usePrivy();
+  const { login, authenticated, isSimulated } = usePrivy();
+  const { usdcBalance, setUsdcBalance, totalRaised, setTotalRaised } = useAuthDetails();
   const [amount, setAmount] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [totalFunds, setTotalFunds] = useState<string>("0");
-  const [userBalance, setUserBalance] = useState<string>("0");
+  const [totalFundsDisplay, setTotalFundsDisplay] = useState<string>(totalRaised.toFixed(2));
+  const [userBalanceDisplay, setUserBalanceDisplay] = useState<string>(usdcBalance.toFixed(2));
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useEffect(() => {
+    if (isSimulated || !wallet) {
+      setTotalFundsDisplay(totalRaised.toFixed(2));
+      setUserBalanceDisplay(usdcBalance.toFixed(2));
+      return;
+    }
+
     const fetchBalances = async () => {
-      if (!wallet) return;
       try {
         const provider = await wallet.getEthersProvider();
-        const usdcContract = new ethers.Contract(USDC_ADDRESS, USDC_ABI, provider);
-        const decimals = await usdcContract.decimals();
+        const network = await provider.getNetwork().catch(() => null);
+        if (network && network.chainId === 8453) {
+          const usdcContract = new ethers.Contract(USDC_ADDRESS, USDC_ABI, provider);
+          const decimals = await usdcContract.decimals().catch(() => 6);
+          const totalFundsRaw = await usdcContract.balanceOf(RECIPIENT_ADDRESS);
+          const formattedTotalFunds = ethers.utils.formatUnits(totalFundsRaw, decimals);
+          setTotalFundsDisplay(parseFloat(formattedTotalFunds).toFixed(2));
 
-        // Fetch total funds
-        const totalFundsRaw = await usdcContract.balanceOf(RECIPIENT_ADDRESS);
-        const formattedTotalFunds = ethers.utils.formatUnits(totalFundsRaw, decimals);
-        setTotalFunds(parseFloat(formattedTotalFunds).toFixed(2));
-
-        // Fetch user balance
-        const signer = provider.getSigner();
-        const userAddress = await signer.getAddress();
-        const userBalanceRaw = await usdcContract.balanceOf(userAddress);
-        const formattedUserBalance = ethers.utils.formatUnits(userBalanceRaw, decimals);
-        setUserBalance(parseFloat(formattedUserBalance).toFixed(2));
+          const signer = provider.getSigner();
+          const userAddress = await signer.getAddress();
+          const userBalanceRaw = await usdcContract.balanceOf(userAddress);
+          const formattedUserBalance = ethers.utils.formatUnits(userBalanceRaw, decimals);
+          setUserBalanceDisplay(parseFloat(formattedUserBalance).toFixed(2));
+          return;
+        }
       } catch (error) {
-        console.error("Error fetching balances:", error);
+        console.warn("Could not fetch on-chain balances, using state:", error);
       }
+      setTotalFundsDisplay(totalRaised.toFixed(2));
+      setUserBalanceDisplay(usdcBalance.toFixed(2));
     };
 
     fetchBalances();
-    const interval = setInterval(fetchBalances, 10000);
+    const interval = setInterval(fetchBalances, 15000);
     return () => clearInterval(interval);
-  }, [wallet]);
+  }, [wallet, isSimulated, totalRaised, usdcBalance]);
 
   const handleMax = () => {
-    setAmount(userBalance);
+    setAmount(userBalanceDisplay);
   };
 
   const handleDonate = async () => {
     if (!amount || !wallet) return;
 
+    const parsedAmountNum = parseFloat(amount);
+    if (isNaN(parsedAmountNum) || parsedAmountNum <= 0) {
+      alert("Please enter a valid amount");
+      return;
+    }
+
     setLoading(true);
     try {
-      const provider = await wallet.getEthersProvider();
-      const signer = provider.getSigner();
-      const usdcContract = new ethers.Contract(USDC_ADDRESS, USDC_ABI, signer);
+      if (isSimulated) {
+        if (parsedAmountNum > usdcBalance) {
+          alert("Insufficient USDC balance");
+          setLoading(false);
+          return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        setUsdcBalance((prev) => Math.max(0, +(prev - parsedAmountNum).toFixed(3)));
+        setTotalRaised((prev) => +(prev + parsedAmountNum).toFixed(3));
+        setAmount("");
+        setShowSuccessModal(true);
+      } else {
+        const provider = await wallet.getEthersProvider();
+        const signer = provider.getSigner();
+        const usdcContract = new ethers.Contract(USDC_ADDRESS, USDC_ABI, signer);
 
-      const decimals = await usdcContract.decimals();
-      const parsedAmount = ethers.utils.parseUnits(amount, decimals);
+        const decimals = await usdcContract.decimals().catch(() => 6);
+        const parsedAmount = ethers.utils.parseUnits(amount, decimals);
 
-      const tx = await usdcContract.transfer(RECIPIENT_ADDRESS, parsedAmount);
-      await tx.wait();
+        const tx = await usdcContract.transfer(RECIPIENT_ADDRESS, parsedAmount);
+        await tx.wait();
 
-      setAmount("");
-      setShowSuccessModal(true);
+        setAmount("");
+        setShowSuccessModal(true);
+      }
     } catch (error) {
       console.error("Error donating:", error);
       alert("Failed to process donation. Please try again.");
@@ -131,10 +161,10 @@ const GoFundSmiles = ({ wallet }: GoFundSmilesProps) => {
             <p className="text-lg font-medium text-gray-700 mb-4 max-w-md mx-auto">
               Help me spread more smiles! Your contribution helps me pay the gas bills and reward humans for being nice to me!
             </p>
-            <div className="inline-block bg-white/50 px-4 py-2 rounded-full border-2 border-black">
+            <div className="inline-block bg-white/80 px-4 py-2 rounded-full border-2 border-black">
               <span className="font-semibold">Total Funds Raised: </span>
               <span className="font-bold">
-                {totalFunds} 
+                {totalFundsDisplay}{' '}
                 <img
                   src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png"
                   alt="USDC"
@@ -144,11 +174,11 @@ const GoFundSmiles = ({ wallet }: GoFundSmilesProps) => {
             </div>
           </div>
 
-          <div className="bg-white/40 p-6 rounded-lg border-2 border-black max-w-md mx-auto">
+          <div className="bg-white/60 p-6 rounded-lg border-2 border-black max-w-md mx-auto">
             <div className="mb-2 flex justify-between items-center">
               <span className="text-sm font-medium text-gray-600">Your Balance:</span>
               <span className="font-bold flex items-center gap-1">
-                {userBalance}
+                {userBalanceDisplay}
                 <img
                   src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png"
                   alt="USDC"
@@ -164,12 +194,13 @@ const GoFundSmiles = ({ wallet }: GoFundSmilesProps) => {
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="Amount to donate"
-                  className="pr-24 border-2 border-black text-lg font-medium h-12"
+                  className="pr-24 border-2 border-black text-lg font-medium h-12 bg-white"
                   min="0"
                   step="0.1"
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
                   <Button
+                    type="button"
                     onClick={handleMax}
                     className="h-7 px-2 py-1 text-xs font-bold bg-gray-200 hover:bg-gray-300 text-black border-2 border-black rounded"
                   >
@@ -226,7 +257,7 @@ const GoFundSmiles = ({ wallet }: GoFundSmilesProps) => {
           </h3>
           
           <p className="text-lg font-medium text-gray-700 mb-6">
-            Your generous donation will help ai spread more smiles worldwide! 😊
+            Your generous donation will help AI spread more smiles worldwide! 😊
           </p>
           
           <Button
